@@ -3,7 +3,9 @@ import easyocr
 from groq import Groq
 from flask import Blueprint, request, jsonify
 from werkzeug.utils import secure_filename
-from utils.auth_utils import login_required
+from utils.auth_utils import token_required
+import datetime
+from app_instance import mongo
 
 ocr_bp = Blueprint('ocr', __name__)
 
@@ -23,14 +25,15 @@ def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 @ocr_bp.route('/upload', methods=['POST'])
-@login_required
-def upload_file():
+@token_required
+def upload_file(current_user):
     if 'file' not in request.files:
         return jsonify({'error': 'No file part'}), 400
 
     file = request.files['file']
     document_type = request.form.get('document_type', '')
     questions = request.form.getlist('questions')
+    relationship = request.form.get('relationship', '')
 
     if file.filename == '':
         return jsonify({'error': 'No selected file'}), 400
@@ -42,15 +45,30 @@ def upload_file():
 
         # Extract text using EasyOCR
         text = extract_text(filepath)
-        print(questions)
+        
 
         # Process questions with Groq API (Mistral)
         extracted_info = extract_information(text, questions)
+        
+
+        # Store extracted data in MongoDB
+        db = mongo.db
+        
+        document = {
+            "user_id": str(current_user["_id"]),
+            "document_type": document_type,
+            "extracted_data": extracted_info,  # Extracted values only
+            "final_data": {},  # Empty for now, user will edit later
+            "relationship": relationship,
+            "created_at": datetime.datetime.now()
+        }
+
+        result = db.documents.insert_one(document)
 
         return jsonify({
-            'message': 'File processed successfully',
-            'document_type': document_type,
-            'extracted_data': extracted_info
+            "message": f'File of {relationship} processed successfully',
+            "document_id": str(result.inserted_id),
+            "extracted_data": extracted_info
         }), 200
 
     return jsonify({'error': 'Invalid file type'}), 400
@@ -58,6 +76,7 @@ def upload_file():
 def extract_text(image_path):
     try:
         results = reader.readtext(image_path, detail=0)
+        print(results)
         return " ".join(results)
     except Exception as e:
         return str(e)
@@ -75,7 +94,7 @@ def extract_information(text, questions):
         """
         try:
             response = client.chat.completions.create(
-                model="gemma2-9b-it",  # Adjust if Groq has a specific model name for Mistral
+                model="gemma2-9b-it", 
                 messages=[{"role": "user", "content": prompt}],
                 temperature=0.3,  # Keep responses consistent
                 max_tokens=200
