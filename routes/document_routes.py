@@ -5,6 +5,7 @@ from utils.auth_utils import token_required
 from app_instance import mongo
 from pinecone import Pinecone
 from sentence_transformers import SentenceTransformer
+from dotenv import load_dotenv
 
 from .Connecting_LLM_VectorDB.vectordb import store_text_doc
 
@@ -13,8 +14,11 @@ document_bp = Blueprint('document', __name__)
 # Load SentenceTransformer model
 model = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
 
+load_dotenv()
+
+Pinecone_api=os.getenv("PINECONE_API_KEY")
 # Initialize Pinecone
-pc = Pinecone(api_key="pcsk_5iAUBD_QTr7hP54SA6DGtuhgGynT35UwcjykiGKdCEqxyYcGCU6rEbg6m2AUPeHuq3H6AC")  # Replace with your actual API key
+pc = Pinecone(api_key=Pinecone_api)  # Replace with your actual API key
 index_name = "text-search"
 
 def embed_text(text):
