@@ -61,4 +61,4 @@ def logout():
 @auth_bp.route('/protected', methods=['GET'])
 @token_required  # This decorator will check the JWT token in the headers
 def protected(current_user):
-    return jsonify({'message': f'Hello, {current_user["username"]}!'}), 200
+    return jsonify({'message': f'Hello, {current_user}!'}), 200

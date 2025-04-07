@@ -15,7 +15,12 @@ app.register_blueprint(ocr_bp, url_prefix='/ocr')
 from routes.document_routes import document_bp
 
 # Register document blueprint
-app.register_blueprint(document_bp, url_prefix='/document')
+app.register_blueprint(document_bp, url_prefix='/docs')
+
+from routes.chat_routes import chat_bp
+
+# Register chat blueprint
+app.register_blueprint(chat_bp)
 
 
 if __name__ == '__main__':

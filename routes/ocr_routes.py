@@ -10,7 +10,7 @@ from app_instance import mongo
 ocr_bp = Blueprint('ocr', __name__)
 
 UPLOAD_FOLDER = 'uploads'
-ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg','pdf'}
 
 if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
@@ -68,7 +68,9 @@ def upload_file(current_user):
         return jsonify({
             "message": f'File of {relationship} processed successfully',
             "document_id": str(result.inserted_id),
-            "extracted_data": extracted_info
+            "relationship": relationship,
+            "extracted_data": extracted_info,
+            "document_type": document_type
         }), 200
 
     return jsonify({'error': 'Invalid file type'}), 400
