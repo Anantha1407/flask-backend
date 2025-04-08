@@ -1,5 +1,5 @@
 from app_instance import app
-
+import os
 
 # Import routes
 from routes.auth_routes import auth_bp
@@ -23,5 +23,6 @@ from routes.chat_routes import chat_bp
 app.register_blueprint(chat_bp)
 
 
+PORT= int(os.getenv("PORT"))
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(port=PORT)
