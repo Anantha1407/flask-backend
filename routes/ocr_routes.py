@@ -10,7 +10,7 @@ from app_instance import mongo
 ocr_bp = Blueprint('ocr', __name__)
 
 UPLOAD_FOLDER = 'uploads'
-ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg','pdf'}
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
 
 if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
@@ -43,35 +43,37 @@ def upload_file(current_user):
         filepath = os.path.join(UPLOAD_FOLDER, filename)
         file.save(filepath)
 
-        # Extract text using EasyOCR
-        text = extract_text(filepath)
-        
+        try:
+            # Extract text using EasyOCR
+            text = extract_text(filepath)
 
-        # Process questions with Groq API (Mistral)
-        extracted_info = extract_information(text, questions)
-        
+            # Process questions with Groq API (Mistral)
+            extracted_info = extract_information(text, questions)
 
-        # Store extracted data in MongoDB
-        db = mongo.db
-        
-        document = {
-            "user_id": str(current_user["_id"]),
-            "document_type": document_type,
-            "extracted_data": extracted_info,  # Extracted values only
-            "final_data": {},  # Empty for now, user will edit later
-            "relationship": relationship,
-            "created_at": datetime.datetime.now()
-        }
+            # Store extracted data in MongoDB
+            db = mongo.db
+            document = {
+                "user_id": str(current_user["_id"]),
+                "document_type": document_type,
+                "extracted_data": extracted_info,
+                "final_data": {},  # Empty for now, user will edit later
+                "relationship": relationship,
+                "created_at": datetime.datetime.now()
+            }
+            result = db.documents.insert_one(document)
 
-        result = db.documents.insert_one(document)
+            return jsonify({
+                "message": f'File of {relationship} processed successfully',
+                "document_id": str(result.inserted_id),
+                "relationship": relationship,
+                "extracted_data": extracted_info,
+                "document_type": document_type
+            }), 200
 
-        return jsonify({
-            "message": f'File of {relationship} processed successfully',
-            "document_id": str(result.inserted_id),
-            "relationship": relationship,
-            "extracted_data": extracted_info,
-            "document_type": document_type
-        }), 200
+        finally:
+            # Ensure the file is deleted even if an error occurs
+            if os.path.exists(filepath):
+                os.remove(filepath)
 
     return jsonify({'error': 'Invalid file type'}), 400
 

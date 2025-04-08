@@ -6,6 +6,7 @@ from app_instance import mongo
 from pinecone import Pinecone
 from sentence_transformers import SentenceTransformer
 from dotenv import load_dotenv
+import os
 
 from .Connecting_LLM_VectorDB.vectordb import store_text_doc
 
